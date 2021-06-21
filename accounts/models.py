@@ -59,7 +59,7 @@ class Account(AbstractBaseUser):
     is_superadmin   = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'email' #inputing email instead of username in the username field
-    REQUIRED_FIELDS =  ['username', 'first_name', 'last_name'] #fields must have S
+    REQUIRED_FIELDS =  ['username', 'first_name', 'last_name'] #fields must have S. and fields that are required to be filled
 
     objects = MyAccountManager()
 

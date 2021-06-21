@@ -134,3 +134,13 @@ STATICFILES_DIRS = [ 'shopme/static',]
 #mdia files configurations
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR /'media'
+
+#SMTP configuration for gmail
+# EMAIL_HOST =  'smtp.gmail.com'
+# EMAIL_PORT = 587
+# EMAIL_HOST_USER = 'jeruanis30@gmail.com'
+# EMAIL_HOST_PASSWORD = 'Themanager1!'
+# EMAIL_USE_TLS = True
+
+#for develpement only
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
