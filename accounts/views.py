@@ -12,6 +12,12 @@ from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import EmailMessage
 
+from carts.models import CartItem, Cart
+from carts.views import _cart_id
+from store.models import Product
+from django.db.models import Q
+import requests
+
 
 from django.http import HttpResponse
 
@@ -29,7 +35,6 @@ def register(request):
             password = form.cleaned_data['password']
             username = email.split('@')[0]
 
-            #added functionality
             user = Account.objects.all()
             username_list =[]
             for n in user:
@@ -45,7 +50,7 @@ def register(request):
 
                 else:
                     username == username
-            #end added functionality
+
 
             user = Account.objects.create_user(first_name=first_name, last_name=last_name, email=email, password=password, username=username)
             user.phone_number=phone_number
@@ -79,9 +84,93 @@ def login(request):
         password = request.POST['password']
         user=auth.authenticate(email=email, password=password)
         if user is not None:
+            try:
+                cart = Cart.objects.get(cart_id=_cart_id(request))
+
+                is_cart_item_exists = CartItem.objects.filter(cart=cart).exists()
+                if is_cart_item_exists:
+                    cart_item = CartItem.objects.filter(cart=cart)
+                    products=[]
+                    #identify the products name
+                    for i in cart_item:
+                        product_id = i.product_id
+                        product = Product.objects.get(id=product_id)
+                        products.append(product)
+
+                    #collect the product's name from the cart (products=[]) = (cart_item_cart_list=[])
+                    cart_item_cart_list=[]
+                    for p in products:
+                        cart_item_cart = CartItem.objects.filter(product=p, cart=cart) #all the items in this cart id is in the cart item
+                        cart_item_cart_list.append(cart_item_cart)
+
+                    item_carts={}
+                    for item in cart_item_cart_list:
+                        for i in item:
+                            id=i.id
+                            qty = i.quantity
+                            prod_id = i.product_id
+                            variation = i.variations.all()
+                            variation = list(variation)
+                            variation=str(variation)
+                            item_carts[variation+str(prod_id)]=(str(qty) + '-' + str(id))
+
+                    #get the cart item from the user to access his product variation
+                    cart_item_user = CartItem.objects.filter(user=user)
+                    id=[]
+                    item_user=[]
+                    for item in cart_item_user:
+                        id.append(item.id) #ids of products of the user
+
+                    for item in cart_item_user:
+                        qty = item.quantity
+                        prod_id = item.product_id
+                        variation = item.variations.all()
+                        variation = list(variation) #remove the queryset
+                        variation=str(variation)
+                        item_user.append(variation+str(prod_id))
+
+                    id_cart =[]
+                    for key, value in item_carts.items():
+                        if key in item_user:
+                            index = item_user.index(key)
+                            item_id = id[index] #taking the id of existing
+                            item = CartItem.objects.get(id=item_id)
+                            qty_value=int(value.split('-')[0])
+                            id_used = int(value.split('-')[1])
+                            id_cart.append(id_used)
+                            item.quantity +=qty_value
+                            item.user = user
+                            item.save()
+
+                        else:
+                            #remove the initial products that has been added already in the existing
+                            for i in id_cart:
+                                del_cart_item = CartItem.objects.get(id=id_cart[id_cart.index(i)])
+                                cart_item = CartItem.objects.filter(cart=cart).exclude(id=id_cart[id_cart.index(i)])
+                                for item in cart_item:
+                                    item.user = user
+                                    item.save()
+
+                                del_cart_item.delete()
+
+            except:
+                pass
+
             auth.login(request, user)
             messages.success(request, 'You are now loggedin.')
-            return redirect('dashboard')
+            url = request.META.get('HTTP_REFERER')
+            try:
+                query = requests.utils.urlparse(url).query
+                #next=/cart/checkout/
+                params = dict(x.split('=') for x in query.split('&'))
+                #{next:'/cart/checkout/'}
+                if 'next' in params:
+                    nextPage = params['next']
+                    return redirect(nextPage)
+
+            except:
+                #if not redirecting to checkout
+                return redirect('dashboard')
         else:
             messages.warning(request, 'Username or Password is incorrect!')
             return redirect('login')
