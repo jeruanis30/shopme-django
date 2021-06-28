@@ -3,19 +3,23 @@
 
 {% block content %}
 <!-- ========================= SECTION PAGETOP ========================= -->
+{% if 'search' in request.path %}
 <section class="section-pagetop bg">
 <div class="container">
-{% if 'search' in request.path %} <!--means if there is a search word in the url pattern-->
+<!--means if there is a search word in the url pattern-->
 <h2 class="title-page">Search Result</h2>
-{% else %}
-<h2 class="title-page">Our Store</h2>
-{% endif %}
 </div> <!-- container //  -->
 </section>
+{% else %}
+<!-- <section class="section-pagetop bg">
+<div class="container">
+<h2 class="title-page">Our Store</h2>
+</section> -->
+{% endif %}
 <!-- ========================= SECTION INTRO END// ========================= -->
 
 <!-- ========================= SECTION CONTENT ========================= -->
-<section class="section-content padding-y">
+<section class="section-content py-3">
 <div class="container">
 
 <div class="row">

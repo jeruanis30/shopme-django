@@ -50,6 +50,13 @@ class Account(AbstractBaseUser):
     email           = models.EmailField(max_length=100, unique=True)
     phone_number    = models.CharField(max_length=50)
 
+    address_line_1 = models.CharField(max_length=51, blank=True)
+    address_line_2 = models.CharField(max_length=51, blank=True)
+    country = models.CharField(max_length=54, blank=True)
+    state = models.CharField(max_length=54, blank=True)
+    city = models.CharField(max_length=54, blank=True)
+
+
     #required when making custom usermodels
     date_joined     = models.DateTimeField(auto_now_add=True)
     last_login      = models.DateTimeField(auto_now_add=True)
@@ -58,17 +65,16 @@ class Account(AbstractBaseUser):
     is_active       = models.BooleanField(default=False)
     is_superadmin   = models.BooleanField(default=False)
 
-    USERNAME_FIELD = 'email' #inputing email instead of username in the username field
-    REQUIRED_FIELDS =  ['username', 'first_name', 'last_name'] #fields must have S. and fields that are required to be filled
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS =  ['username', 'first_name', 'last_name']
 
     objects = MyAccountManager()
 
     def __str__(self):
         return self.email
 
-    #required also when creating custom usermodel
     def has_perm(self, perm, obj=None):
-        return self.is_admin #means if the user is admin he has all the permission to do all the changes
+        return self.is_admin
 
     def has_module_perms(self, add_label):
         return True

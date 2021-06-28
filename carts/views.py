@@ -3,6 +3,8 @@ from store.models import Product, Variation
 from .models import Cart, CartItem
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.decorators import login_required
+from orders.models import Order
+from accounts.models import Account
 
 # Create your views here.
 def _cart_id(request): #underscore means that it is private
@@ -179,12 +181,13 @@ def cart(request, total=0, quantity=0, cart_items=None):
             for cart_item in cart_items:
                 total+=(cart_item.product.price*cart_item.quantity)
                 quantity+=cart_item.quantity
-            tax = (2 * total)/100
+            tax = (12 * total)/100
             grand_total = total + tax
 
         else:
             cart = Cart.objects.get(cart_id=_cart_id(request))
             cart_items = CartItem.objects.filter(cart=cart, is_active=True)
+
             for cart_item in cart_items:
                 total+=(cart_item.product.price*cart_item.quantity)
                 quantity+=cart_item.quantity
@@ -197,6 +200,7 @@ def cart(request, total=0, quantity=0, cart_items=None):
 
 @login_required(login_url='login') #need login before going to the page
 def checkout(request, total=0, quantity=0, cart_items=None):
+    user_details = Account.objects.get(email=request.user)
     try:
         #inititalize the variable first
         tax=0
@@ -206,13 +210,17 @@ def checkout(request, total=0, quantity=0, cart_items=None):
         else:
             cart = Cart.objects.get(cart_id=_cart_id(request))
             cart_items = CartItem.objects.filter(cart=cart, is_active=True)
+
+        #summary of computation
         for cart_item in cart_items:
             total+=(cart_item.product.price*cart_item.quantity)
             quantity+=cart_item.quantity
-        tax = (2 * total)/100
-        grand_total = total + tax
+        tax = (12 * total)/100
+        shipping_cost = 500
+        grand_total = total + tax + shipping_cost
 
     except ObjectDoesNotExist:
             pass
-    context={'total':total, 'quantity':quantity, 'cart_items':cart_items, 'tax':tax, 'grand_total':grand_total}
+    context={'total':total, 'quantity':quantity, 'cart_items':cart_items, 'tax':tax, 'grand_total':grand_total,
+                'shipping_cost':shipping_cost, 'user_detail':user_details}
     return render(request, 'store/checkout.html', context)

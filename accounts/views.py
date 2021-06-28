@@ -51,7 +51,6 @@ def register(request):
                 else:
                     username == username
 
-
             user = Account.objects.create_user(first_name=first_name, last_name=last_name, email=email, password=password, username=username)
             user.phone_number=phone_number
             user.save()
@@ -85,6 +84,7 @@ def login(request):
         user=auth.authenticate(email=email, password=password)
         if user is not None:
             try:
+                #get the session id
                 cart = Cart.objects.get(cart_id=_cart_id(request))
 
                 is_cart_item_exists = CartItem.objects.filter(cart=cart).exists()
@@ -130,6 +130,7 @@ def login(request):
                         item_user.append(variation+str(prod_id))
 
                     id_cart =[]
+
                     for key, value in item_carts.items():
                         if key in item_user:
                             index = item_user.index(key)
@@ -143,15 +144,22 @@ def login(request):
                             item.save()
 
                         else:
-                            #remove the initial products that has been added already in the existing
-                            for i in id_cart:
-                                del_cart_item = CartItem.objects.get(id=id_cart[id_cart.index(i)])
-                                cart_item = CartItem.objects.filter(cart=cart).exclude(id=id_cart[id_cart.index(i)])
+                            if len(id_cart) == 0:
                                 for item in cart_item:
                                     item.user = user
                                     item.save()
 
-                                del_cart_item.delete()
+                            else:
+                            #remove the initial products that has been added already in the existing
+                                for i in id_cart:
+                                    del_cart_item = CartItem.objects.get(id=id_cart[id_cart.index(i)])
+                                    cart_item = CartItem.objects.filter(cart=cart).exclude(id=id_cart[id_cart.index(i)])
+                                    for item in cart_item:
+                                        item.user = user
+                                        item.save()
+
+                                    del_cart_item.delete()
+
 
             except:
                 pass
