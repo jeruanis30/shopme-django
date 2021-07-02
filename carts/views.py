@@ -5,6 +5,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.decorators import login_required
 from orders.models import Order
 from accounts.models import Account
+from accounts.forms import CheckoutForm
 
 # Create your views here.
 def _cart_id(request): #underscore means that it is private
@@ -201,6 +202,7 @@ def cart(request, total=0, quantity=0, cart_items=None):
 @login_required(login_url='login') #need login before going to the page
 def checkout(request, total=0, quantity=0, cart_items=None):
     user_details = Account.objects.get(email=request.user)
+    form = CheckoutForm(instance = user_details)
     try:
         #inititalize the variable first
         tax=0
@@ -216,11 +218,11 @@ def checkout(request, total=0, quantity=0, cart_items=None):
             total+=(cart_item.product.price*cart_item.quantity)
             quantity+=cart_item.quantity
         tax = (12 * total)/100
-        shipping_cost = 500
+        shipping_cost = 10
         grand_total = total + tax + shipping_cost
 
     except ObjectDoesNotExist:
             pass
     context={'total':total, 'quantity':quantity, 'cart_items':cart_items, 'tax':tax, 'grand_total':grand_total,
-                'shipping_cost':shipping_cost, 'user_detail':user_details}
+                'shipping_cost':shipping_cost, 'form':form}
     return render(request, 'store/checkout.html', context)

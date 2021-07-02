@@ -1,5 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.utils.html import format_html
+from imagekit.models import ImageSpecField
+from pilkit.processors import ResizeToFill
 
 # Create your models here.
 
@@ -48,13 +51,18 @@ class Account(AbstractBaseUser):
     last_name       = models.CharField(max_length=50)
     username        = models.CharField(max_length=50, unique=True)
     email           = models.EmailField(max_length=100, unique=True)
-    phone_number    = models.CharField(max_length=50)
+    phone           = models.CharField(max_length=50)
+    profession      = models.CharField(max_length=210, blank=True)
+    profile_pic     = models.ImageField(default='userprofile/bugambilaya.jpg', null=True, blank=True, upload_to='userprofile/')
+    image_thumbnail = ImageSpecField(source='profile_pic', processors=[ResizeToFill(150, 150)], format = 'JPEG', options = {'quality':60})
 
     address_line_1 = models.CharField(max_length=51, blank=True)
     address_line_2 = models.CharField(max_length=51, blank=True)
     country = models.CharField(max_length=54, blank=True)
     state = models.CharField(max_length=54, blank=True)
     city = models.CharField(max_length=54, blank=True)
+    zip = models.IntegerField(null=True, blank=True)
+
 
 
     #required when making custom usermodels
@@ -78,3 +86,9 @@ class Account(AbstractBaseUser):
 
     def has_module_perms(self, add_label):
         return True
+
+    def address(self):
+        return f'{self.address_line_1} {self.address_line_2} {self.city} {self.state} {self.country}'
+
+    def full_name(self):
+        return f'{self.first_name} {self.last_name}'

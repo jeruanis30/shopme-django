@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Product
+from .models import Product, ProductGallery
 from category.models import Category
 from carts.models import CartItem
 from carts.views import _cart_id
@@ -9,6 +9,8 @@ from .forms import ReviewForm
 from .models import ReviewRating
 from django.contrib import messages
 from orders.models import OrderProduct
+# import math
+
 # Create your views here.
 
 def store(request, category_slug=None):
@@ -52,7 +54,11 @@ def product_detail(request, category_slug, product_slug):
     # get the reviews
     reviews = ReviewRating.objects.filter(product_id=single_product.id, status=True)
 
-    context={'single_product': single_product, 'in_cart':in_cart, 'orderproduct':orderproduct, 'reviews':reviews}
+    #get the product gallery
+    product_gallery = ProductGallery.objects.filter(product_id=single_product.id)
+
+
+    context={'single_product': single_product, 'in_cart':in_cart, 'orderproduct':orderproduct, 'reviews':reviews, 'images':product_gallery}
     return render(request, 'store/product_detail.html', context)
 
 def search(request):

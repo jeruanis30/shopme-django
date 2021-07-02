@@ -1,5 +1,6 @@
 from .models import Cart, CartItem
 from .views import _cart_id
+from accounts.models import Account
 
 def counter(request):
     cart_count=0
@@ -18,4 +19,17 @@ def counter(request):
                     cart_count += cart_item.quantity
         except Cart.DoesNotExist:
             cart_count = 0
-    return dict(cart_count=cart_count)
+
+    user = request.user
+    if user.is_authenticated:
+        currency=0
+        accounts = Account.objects.get(email = user)
+        country = accounts.country
+        if country == 'Philippines':
+            currency = 'PHP'
+        else:
+            currency = 'USD'
+    else:
+        currency=''
+        country=''
+    return dict(cart_count=cart_count, country=country, currency=currency)

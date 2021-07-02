@@ -14,7 +14,7 @@
 
     </li>
     <li class="nav-item dropdown">
-      <a href="#" class="nav-link"> USD </a>
+      <a href="#" class="nav-link"> <span class="pl-2">{{currency}}</span> </a>
     </li>
     </ul>
     <ul class="navbar-nav">
@@ -71,9 +71,17 @@
                 <a href="{% url 'register' %}"> Register</a>
               </div>
             </div>
+          {% elif user.is_admin %}
+            <div class="widget-header">
+              <small class="title text-muted">Welcome Admin {{user.first_name | title}}</small>
+              <div>
+                <a href="{% url 'dashboard' %}">Dashboard</a> <span class="dark-transp"> | </span>
+                <a href="{% url 'logout' %}"> Logout </a>
+              </div>
+            </div>
           {% else %}
             <div class="widget-header">
-              <small class="title text-muted">Welcome {{user.first_name}}</small>
+              <small class="title text-muted">Welcome {{user.first_name | title}}</small>
               <div>
                 <a href="{% url 'dashboard' %}">Dashboard</a> <span class="dark-transp"> | </span>
                 <a href="{% url 'logout' %}"> Logout </a>

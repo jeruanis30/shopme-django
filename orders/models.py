@@ -35,8 +35,10 @@ class Order(models.Model):
     country = models.CharField(max_length=54)
     state = models.CharField(max_length=54)
     city = models.CharField(max_length=54)
+    zip = models.IntegerField(null=True, blank=True)
     order_note = models.CharField(max_length=200, blank=True)
     order_total = models.FloatField()
+    shipping = models.FloatField(null=True)
     tax = models.FloatField()
     status = models.CharField(max_length=10, choices=STATUS, default='New')
     ip = models.CharField(max_length=21, blank=True)
@@ -48,13 +50,21 @@ class Order(models.Model):
         return f'{self.first_name} {self.last_name}'
 
     def address(self):
-        return f'{self.address_line_1} {self.address_line_2}, {self.city}, {self.state}, {self.country}'
+        return f'{self.address_line_1} {self.address_line_2}, {self.city}, {self.state}, {self.country}, {self.zip}'
 
     def __str__(self):
         return self.user.username
 
 
 class OrderProduct(models.Model):
+    STATUS = (
+        ('Pending', 'Pending'),
+        ('Out for delivery', 'Out for delivery'),
+        ('Delivered', 'Delivered'),
+        ('Cancelled', 'Cancelled'),
+        ('Refund_Paid', 'Refund_Paid')
+    )
+
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
     payment = models.ForeignKey(Payment, on_delete=models.SET_NULL, blank=True, null=True)
     user = models.ForeignKey(Account, on_delete=models.CASCADE)
@@ -63,8 +73,14 @@ class OrderProduct(models.Model):
     quantity = models.IntegerField()
     product_price = models.FloatField()
     ordered = models.BooleanField(default=False)
+    status = models.CharField(max_length=200, null=True, choices = STATUS, default='Pending')
+    ip = models.CharField(max_length=21, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+
     def __str__(self):
         return self.product.product_name
+
+    def date_updated(self):
+        return self.updated_at.strftime('%B %d %Y') #converting to Month name, day and Year pattern

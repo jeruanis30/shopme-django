@@ -2,32 +2,76 @@
 {% load static %}
 
 {% block content %}
+<style>
+	.bglocal{
+	  background:#3598dc;
+	}
+	form.form-register{
+		color:#999;
+	}
+	.btn{
+		border-radius:3px;
+		font-weight:bold;
+	}
+	article{
+  	background:#f2f2f2;
+  }
+/* h2 style begins */
+section>div>article>h2{
+  margin: 0 0 15px;
+	position: relative;
+	text-align: center;
+	}
+
+section>div>article>h2:before, section>div>article>h2:after{
+	content: "";
+	height: 2px;
+	width: 30%;
+	background: #d4d4d4;
+	position: absolute;
+	top: 50%;
+	z-index: 2;
+}
+section>div>article>h2:before{
+	left: 0;
+}
+section>div>article>h2:after{
+	right: 0;
+}
+/* h2 style end */
+
+</style>
 <!-- ========================= SECTION CONTENT ========================= -->
-<section class="section-conten padding-y" style="min-height:84vh">
+<section class="section-conten bglocal" style="min-height:84vh">
 
 	{% if request.GET.command == 'verification' %}
-		<div class="container mx-auto alert alert-info text-center" role="alert" style="max-width: 1074px; margin-top:100px;">
+	<p>&nbsp;</p>
+		<div class="container mx-auto alert alert-info text-center" role="alert" style="max-width: 1074px;">
 			Thank you for registering with us. We have sent you a verification email to your email address [{{request.GET.email}}]. <br><br>
 		</div>
 	{% elif request.GET.command == 'pwdvalidation' %}
-		<div class="container mx-auto alert alert-info text-center" role="alert" style="max-width: 1074px; margin-top:100px;">
+		<p>&nbsp;</p>
+		<div class="container mx-auto alert alert-info text-center" role="alert" style="max-width: 1074px;">
 			Password reset email has been sent to your email address.[{{request.GET.email}}]. Please click the link to reset your password.<br><br>
 		</div>
 	{% else %}
 <!-- ============================ COMPONENT LOGIN   ================================= -->
-	<div class="card mx-auto" style="max-width: 380px; margin-top:100px;">
-      <div class="card-body">
-      <h4 class="card-title mb-4">Sign in</h4>
+ <p>&nbsp;</p>
+	<div class="card mx-auto" style="max-width: 400px;">
+      <article class="card-body">
+      <!-- <h4 class="card-title mb-4">Sign in</h4> -->
+			<h2 class="text-center">Sign in</h2>
+			<hr>
 
       {% include 'includes/alerts.html' %}
 
-      <form action="{% url 'login' %}" method="POST">
+      <form action="{% url 'login' %}" method="POST" class="form-register">
         {% csrf_token %}
           <div class="form-group">
-			        <input type="email" class="form-control" value="summerroad8@gmail.com" name="email" placeholder="Email Address" >
+			        {{form.email}}
           </div> <!-- form-group// -->
           <div class="form-group">
-		  	      <input type="password" class="form-control" value="Thequick1!" name="password" placeholder="Password" >
+		  	      {{form.password}}
           </div> <!-- form-group// -->
 
           <div class="form-group">
@@ -35,13 +79,13 @@
 
           </div> <!-- form-group form-check .// -->
           <div class="form-group">
-              <button type="submit" class="btn btn-primary btn-block"> Login  </button>
+              <button type="submit" class="btn btn-success btn-lg btn-block"> Login  </button>
           </div> <!-- form-group// -->
       </form>
-      </div> <!-- card-body.// -->
+      </article> <!-- card-body.// -->
     </div> <!-- card .// -->
   {% endif %}
-     <p class="text-center mt-4">Don't have account? <a href="{% url 'register' %}">Sign up</a></p>
+     <p class="text-center mt-4 text-white">Don't have account? <a class="text-white "href="{% url 'register' %}">Sign up</a></p>
      <br><br>
 <!-- ============================ COMPONENT LOGIN  END.// ================================= -->
 

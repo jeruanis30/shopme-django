@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+
+<center class="py-5">
+  <div class="container" style="width:600px">
+    <div style="with:600px">
+      <div class="card">
+        <h5 class="card-header">Update Status</h5>
+        <div class="card-body">
+          <h5 class="card-title">Item: {{product}}</h5>
+          <p class="card-text">Tranaction #: {{transID}}</p>
+          <form action="" method="POST">
+            {% csrf_token %}
+              {{ form }}<hr>
+                <a class="btn btn-sm-block btn-warning" href="{% url 'dashboard' %}">Cancel</a>
+                <input class="btn btn-sm-block btn-info" type="submit" name="Submit">
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</center>
+
+
+{% endblock %}

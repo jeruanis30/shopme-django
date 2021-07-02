@@ -2,13 +2,15 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
 from carts.models import CartItem, Cart
 from carts.views import _cart_id
-from .forms import OrderForm
+from .forms import OrderForm, OrderStatusForm
 import datetime
 from .models import Order, OrderProduct, Payment
 import json
 from store.models import Product
 from django.template.loader import render_to_string
 from django.core.mail import EmailMessage
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 
 
 # Create your views here.
@@ -35,7 +37,7 @@ def payments(request):
     #update the payment database
     order.payment = payment
     #update the is_ordered status
-    order.is_ordered = True
+    order.is_ordered = True #order is_ordered setting to true
     order.save()
 
     #Move the cart items to Order Product table
@@ -50,7 +52,8 @@ def payments(request):
         orderproduct.product_id = item.product_id
         orderproduct.quantity = item.quantity
         orderproduct.product_price = item.product.price
-        orderproduct.ordered = True
+        orderproduct.ordered = True #ordereproduct setting ordered to true
+        orderproduct.ip = request.META.get('REMOTE_ADDR')
         orderproduct.save()
 
         #get the id generated after saving orderproduct
@@ -67,13 +70,22 @@ def payments(request):
 
     #clear cart and CartItms
     cart_items = CartItem.objects.filter(user=request.user)#total user cart_items
-    cart_id_used = []
-    for item in cart_items:
-        cart_id_used.append(item.cart)
+    # cart_id_used = []
+    # for item in cart_items:
+    #     cart_id_used.append(item.cart)
 
-    cart = Cart.objects.filter(cart_id=cart_id_used[0])
+    # cart = Cart.objects.filter(cart_id=cart_id_used[0])
     cart_items.delete()
-    cart.delete()
+    # cart.delete()
+
+    #removing unexecuted orders in the database
+    is_orders_not_executed = Order.objects.filter(user = request.user, is_ordered=False).exists()
+    if is_orders_not_executed:
+        orders_not_executed = Order.objects.filter(user = request.user, is_ordered=False)
+        for old_orders in orders_not_executed:
+            old_orders.delete()
+    else:
+        pass
 
     #Send order recieved email to customer
     mail_subject = 'Thank you for your order!'
@@ -110,13 +122,21 @@ def place_order(request, total=0, quantity=0):
         total+=(cart_item.product.price*cart_item.quantity)
         quantity+=cart_item.quantity
     tax = (12 * total)/100
-    shipping_cost = 500
+    #get the location and provide the shipping for that location
+    shipping_cost = 10
     grand_total = total + tax + shipping_cost
 
-    # order = Order.objects.get(user=current_user, is_ordered=False)
-    # .order_by('-id')[:1]
     if request.method == 'POST':
         form = OrderForm(request.POST)
+        zip = request.POST['zip']
+        address_line_1 = request.POST['address_line_1']
+        if not zip:
+            messages.warning(request, 'ZIP is missing!. Suggestion: Update later your ZIP code via edit profile.')
+            return redirect('checkout')
+        if not address_line_1:
+            messages.warning(request, 'Address Line 1 is missing!. Suggestion: Complete later your Address via edit profile. To prevent this warning in the future. Thank you.')
+            return redirect('checkout')
+
         if form.is_valid():
             #store all the billing information indside Order table
             data = Order() #initiate Order class
@@ -130,8 +150,10 @@ def place_order(request, total=0, quantity=0):
             data.country = form.cleaned_data['country']
             data.state = form.cleaned_data['state']
             data.city = form.cleaned_data['city']
+            data.zip = form.cleaned_data['zip']
             data.order_note = form.cleaned_data['order_note']
             data.order_total = grand_total
+            data.shipping = shipping_cost
             data.tax = tax #static
             data.ip = request.META.get('REMOTE_ADDR')
             data.save()
@@ -154,12 +176,10 @@ def place_order(request, total=0, quantity=0):
                 'order':order, 'cart_items': cart_items, 'tax':tax, 'total':total, 'grand_total':grand_total, 'shipping_cost':shipping_cost,
                 }
             return render(request, 'orders/payments.html', context)
+        else:
+            return redirect('checkout')
 
     else:
-        # form = OrderForm()
-        # context={
-        #     'order':order, 'cart_items': cart_items, 'tax':tax, 'total':total, 'grand_total':grand_total, 'shipping_cost':shipping_cost,
-        #     }
         return redirect('checkout')
 
 def order_complete(request):
@@ -199,3 +219,53 @@ def order_complete(request):
 
     except(Payment.DoesNotExist, Order.DoesNotExist):
         return redirect('home')
+
+
+@login_required(login_url='login')
+def update_order_status(request, pk):
+    product = request.GET.get('pr')
+    transID = request.GET.get('trans')
+    orderproduct = OrderProduct.objects.get(id=pk)
+    form = OrderStatusForm(instance=orderproduct)
+    if request.method == 'POST':
+        form = OrderStatusForm(request.POST, instance=orderproduct)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Successfully updated the Order Status.')
+            return redirect('dashboard')
+    context = {'form': form, 'product': product, 'transID':transID}
+    return render(request, 'orders/update_order_status.html', context)
+
+
+@login_required(login_url='login')
+def order_detail(request, trans_id):
+    ordered_products = OrderProduct.objects.filter(payment__payment_id=trans_id)
+    order = Order.objects.get(payment__payment_id=trans_id)
+    order_number = order.order_number
+    transID = trans_id
+
+    payment = Payment.objects.get(payment_id=transID)
+    if payment.status == 'COMPLETED':
+        pay_status = 'PAID'
+    else:
+        pay_status = payment.status
+
+    subtotal = 0
+    #looping through the product items
+    for i in ordered_products:
+        subtotal+=i.product_price*i.quantity
+
+    context = {
+        'order': order_number,
+        'ordered_products': ordered_products,
+        'order_number': order_number,
+        'transID': payment.payment_id,
+        'orderDate': order.created_at,
+        'status': order.status,
+        'payment': payment,
+        'order': order,
+        'pay_status':pay_status,
+        'sub_total':subtotal,
+    }
+
+    return render(request, 'orders/order_detail.html', context)

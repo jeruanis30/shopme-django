@@ -7,7 +7,7 @@ class OrderPrductInline(admin.TabularInline):
     extra  = 0 #remove excess rows
 
 class OrderProductAdmin(admin.ModelAdmin):
-    list_display  = ('payment', 'user', 'product', 'quantity', 'product_price', 'created_at', 'ordered')
+    list_display  = ('payment', 'user', 'product', 'quantity', 'product_price', 'created_at', 'ordered', 'status')
     readonly_fields = ('payment', 'user', 'product', 'quantity', 'product_price', 'ordered')
     list_filter = ('ordered',)
     search_fields = ('product__product_name','user__email', 'payment__payment_id')

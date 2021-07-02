@@ -1,8 +1,9 @@
-from django.shortcuts import render, redirect
-from .forms import RegistrationForm
+from django.shortcuts import render, redirect, get_object_or_404
+from .forms import RegistrationForm, EditProfileForm, UserProfilePicForm, PwdChangeForm, LoginForm
 from .models import Account
 from django.contrib import messages, auth
 from django.contrib.auth.decorators import login_required
+from orders.models import OrderProduct
 
 #verification Email
 from django.contrib.sites.shortcuts import get_current_site
@@ -19,6 +20,7 @@ from django.db.models import Q
 import requests
 
 
+from django.core.exceptions import ValidationError
 from django.http import HttpResponse
 
 # Create your views here.
@@ -31,8 +33,8 @@ def register(request):
             first_name = form.cleaned_data['first_name']
             last_name = form.cleaned_data['last_name']
             email = form.cleaned_data['email']
-            phone_number = form.cleaned_data['phone_number']
-            password = form.cleaned_data['password']
+            phone = form.cleaned_data['phone']
+            password = form.cleaned_data['confirm_password']
             username = email.split('@')[0]
 
             user = Account.objects.all()
@@ -52,7 +54,7 @@ def register(request):
                     username == username
 
             user = Account.objects.create_user(first_name=first_name, last_name=last_name, email=email, password=password, username=username)
-            user.phone_number=phone_number
+            user.phone=phone
             user.save()
 
             #USER ACTIVATION
@@ -82,11 +84,10 @@ def login(request):
         email = request.POST['email']
         password = request.POST['password']
         user=auth.authenticate(email=email, password=password)
+        orderproduct = OrderProduct.objects.filter(user=user)
         if user is not None:
             try:
-                #get the session id
-                cart = Cart.objects.get(cart_id=_cart_id(request))
-
+                cart = Cart.objects.get(cart_id=_cart_id(request)) #get the session id
                 is_cart_item_exists = CartItem.objects.filter(cart=cart).exists()
                 if is_cart_item_exists:
                     cart_item = CartItem.objects.filter(cart=cart)
@@ -114,7 +115,7 @@ def login(request):
                             variation=str(variation)
                             item_carts[variation+str(prod_id)]=(str(qty) + '-' + str(id))
 
-                    #get the cart item from the user to access his product variation
+                    #get the existing cartitem from the user to access his product variation
                     cart_item_user = CartItem.objects.filter(user=user)
                     id=[]
                     item_user=[]
@@ -130,7 +131,6 @@ def login(request):
                         item_user.append(variation+str(prod_id))
 
                     id_cart =[]
-
                     for key, value in item_carts.items():
                         if key in item_user:
                             index = item_user.index(key)
@@ -160,35 +160,63 @@ def login(request):
 
                                     del_cart_item.delete()
 
+                    url = request.META.get('HTTP_REFERER')
+                    cart_item_user = CartItem.objects.filter(user=user) #need to redeclare as the its value changes
+                    if cart_item_user.count() > 0: #with cartitem
+                        try:
+                            query = requests.utils.urlparse(url).query
+                            #next=/cart/checkout/
+                            params = dict(x.split('=') for x in query.split('&'))
+                            #{next:'/cart/checkout/'}
+                            if 'next' in params:
+                                nextPage = params['next']
+                                auth.login(request, user)
+                                messages.success(request, 'You are now loggedin.')
+                                return redirect(nextPage)
+                        except:
+                            pass
 
-            except:
-                pass
+                    elif orderproduct.count() > 0:  #with orderproduct
+                        auth.login(request, user)
+                        messages.success(request, 'You are now loggedin.')
+                        return redirect('dashboard')
 
-            auth.login(request, user)
-            messages.success(request, 'You are now loggedin.')
-            url = request.META.get('HTTP_REFERER')
-            try:
-                query = requests.utils.urlparse(url).query
-                #next=/cart/checkout/
-                params = dict(x.split('=') for x in query.split('&'))
-                #{next:'/cart/checkout/'}
-                if 'next' in params:
-                    nextPage = params['next']
-                    return redirect(nextPage)
+                    else:
+                        auth.login(request, user)
+                        auth.login(request, user)
+                        messages.success(request, 'You are now loggedin.')
+                        return redirect('home')
 
-            except:
-                #if not redirecting to checkout
-                return redirect('dashboard')
-        else:
+            except Cart.DoesNotExist: #did not order while logged out just loggedin
+                auth.login(request, user)
+                cart_item_user = CartItem.objects.filter(user=user)
+                if cart_item_user.count() > 0: #with cartitem
+                    auth.login(request, user)
+                    messages.success(request, 'You are now loggedin.')
+                    return redirect('checkout')
+                elif orderproduct.count() > 0: #with orderproduct
+                    auth.login(request, user)
+                    messages.success(request, 'You are now loggedin.')
+                    return redirect('dashboard')
+                else:
+                    auth.login(request, user)
+                    messages.success(request, 'You are now loggedin.')
+                    return redirect('home')
+
+        else: #user is None
             messages.warning(request, 'Username or Password is incorrect!')
             return redirect('login')
-    return render(request, 'accounts/login.html')
+    else: #request not a POST
+        form=LoginForm()
+        context={'form':form}
+        return render(request, 'accounts/login.html', context)
+
 
 @login_required(login_url='login')
 def logout(request):
     auth.logout(request)
-    messages.info(request, 'logout successful')
-    return redirect('login') #this does not need logout template
+    messages.success(request, 'logout successful')
+    return redirect('login')
 
 def activate(request, uidb64, token):
     #decode the ids
@@ -201,7 +229,8 @@ def activate(request, uidb64, token):
     if user is not None and default_token_generator.check_token(user, token):
         user.is_active = True
         user.save()
-        messages.success(request, 'Congratulations! Your account is now active.')
+        messages.success(request, 'Congratulations! Your account is now active. Please Login below.')
+        messages.warning(request, 'Your email [ ' + str(user) + ' ]')
         return redirect('login')
     else:
         messages.warning(request, 'Invalid activation link')
@@ -243,7 +272,33 @@ def forgotPasswordReset_page(request):
 
 @login_required(login_url = 'login')
 def dashboard(request):
-    return render(request, 'accounts/dashboard.html')
+    current_user = request.user
+    if current_user.is_admin or current_user.is_superadmin:
+        orderproducts = OrderProduct.objects.all()
+        count = orderproducts.count()
+        delivered = OrderProduct.objects.filter(status='Delivered')
+        delivered_count=delivered.count()
+        OFD = OrderProduct.objects.filter(status='Out for delivery')
+        OFD_count = OFD.count()
+        pending = OrderProduct.objects.filter(status='Pending')
+        pending_count = pending.count()
+        cancel = OrderProduct.objects.filter(status='Cancelled')
+        cancel_count = cancel.count()
+    else:
+        orderproducts = OrderProduct.objects.filter(user=current_user).order_by('-id')
+        count = orderproducts.count()
+        delivered = OrderProduct.objects.filter(user=current_user, status='Delivered')
+        delivered_count=delivered.count()
+        OFD = OrderProduct.objects.filter(user=current_user, status='Out for delivery')
+        OFD_count = OFD.count()
+        pending = OrderProduct.objects.filter(user=current_user, status='Pending')
+        pending_count = pending.count()
+        cancel = OrderProduct.objects.filter(user=current_user, status='Cancelled')
+        cancel_count = cancel.count()
+
+    context = {'orderproducts':orderproducts, 'count':count,'delivered':delivered_count,'OFD':OFD_count,'pending':pending_count,'cancel':cancel_count}
+    return render(request, 'accounts/dashboard.html', context)
+
 
 def forgotPassword(request):
     if request.method == 'POST':
@@ -271,3 +326,61 @@ def forgotPassword(request):
             return redirect('forgotPassword')
 
     return render(request, 'accounts/forgotPassword.html')
+
+@login_required(login_url = 'login')
+def my_profile(request):
+    info = Account.objects.get(email=request.user)
+    context = {'info': info}
+    return render(request, 'accounts/my_profile.html', context)
+
+@login_required(login_url = 'login')
+def edit_profile(request):
+    accounts = Account.objects.get(email=request.user)
+    if request.method == 'POST':
+        propic_form = UserProfilePicForm(request.POST, request.FILES, instance=accounts)
+        form = EditProfileForm(request.POST, instance=accounts)
+        if form.is_valid() and propic_form.is_valid():
+            propic_form.save()
+            user = form.save(commit=False)
+            user.first_name = form.cleaned_data['first_name']
+            user.last_name = form.cleaned_data['last_name']
+            user.phone_number = form.cleaned_data['phone']
+            user.profession = form.cleaned_data['profession']
+            user.address_line_1 = form.cleaned_data['address_line_1']
+            user.address_line_2 = form.cleaned_data['address_line_2']
+            user.country = form.cleaned_data['country']
+            user.state = form.cleaned_data['state']
+            user.city = form.cleaned_data['city']
+            user.zip = form.cleaned_data['zip']
+            user.save()
+            messages.success(request, 'Your profile has been successfully updated.')
+            return redirect('edit_profile')
+    else:
+        form = EditProfileForm(instance=accounts)
+        propic_form = UserProfilePicForm(instance=accounts)
+
+    context={'form':form, 'accounts':accounts, 'propic_form':propic_form}
+    return render(request, 'accounts/edit_profile.html', context)
+
+
+@login_required(login_url = 'login')
+def change_password(request):
+     accounts = Account.objects.get(email=request.user)
+     if request.method == 'POST':
+         current_password = request.POST['old_password']
+         new_password = request.POST['new_password2']
+         form = PwdChangeForm(request.POST, instance=accounts)
+         if form.is_valid():
+            success = accounts.check_password(current_password)
+            if success:
+                 accounts.set_password(new_password)
+                 accounts.save()
+                 messages.success(request, 'Login with your new password.')
+                 return redirect('login')
+            else:
+                messages.warning(request, 'Password update Fail! You provided a wrong Old Password.')
+                return redirect('change_password')
+     else:
+         form = PwdChangeForm(instance=accounts)
+     context = {'accounts':accounts, 'form':form}
+     return render(request, 'accounts/change_password.html', context)

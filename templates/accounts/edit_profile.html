@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<!-- ========================= SECTION CONTENT ========================= -->
+<section class="section-content py-3 bg">
+
+<div class="px-3">
+	{% include 'includes/alerts.html' %}
+	<div class="row">
+
+	{% include 'includes/dashboard_sidebar.html' %}
+
+	<main class="col-md-10">
+		<article class="card">
+		<div class="card-body">
+
+   <form action="{% url 'edit_profile' %}" method="POST" enctype="multipart/form-data">
+     {% csrf_token %}
+      <div class="row gutters-sm">
+            <div class="col-md-4 mb-3">
+              <div class="card">
+                <div class="card-body">
+                  <div class="d-flex flex-column align-items-center text-center">
+                    <img src="{{accounts.image_thumbnail.url}}" alt="Admin" class="rounded-circle">
+                    <div class="mt-3">
+                      <h4>{{accounts.username}}</h4>
+                      <p class="text-secondary mb-1">{{accounts.profession | title}}</p>
+                      <p class="text-muted font-size-sm">{{accounts.address | title}}</p>
+                        {{propic_form.profile_pic}}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+
+            </div>
+            <div class="col-md-8">
+              <div class="card mb-3">
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-sm-3">
+                      <h6 class="mb-0">First Name</h6>
+                    </div>
+                    <div class="col-sm-9 text-secondary">
+                      {{form.first_name}}
+                    </div>
+                  </div>
+                  <hr>
+                  <div class="row">
+                    <div class="col-sm-3">
+                      <h6 class="mb-0">Last Name</h6>
+                    </div>
+                    <div class="col-sm-9 text-secondary">
+                      {{form.last_name}}
+                    </div>
+                  </div>
+                  <hr>
+                  <div class="row">
+                    <div class="col-sm-3">
+                      <h6 class="mb-0">Email</h6>
+                    </div>
+                    <div class="col-sm-9 text-secondary">
+                      {{form.email}}
+                    </div>
+                  </div>
+                  <hr>
+                  <div class="row">
+                    <div class="col-sm-3">
+                      <h6 class="mb-0">Phone</h6>
+                    </div>
+                    <div class="col-sm-9 text-secondary">
+                      {{form.phone}}
+                    </div>
+                  </div>
+                  <hr>
+                  <div class="row">
+                    <div class="col-sm-3">
+                      <h6 class="mb-0">Profession</h6>
+                    </div>
+                    <div class="col-sm-9 text-secondary">
+                      {{form.profession}}
+                    </div>
+                  </div>
+                  <hr>
+                  <div class="row">
+                    <div class="col-sm-3">
+                      <h6 class="mb-0">Address line 1</h6>
+                    </div>
+                    <div class="col-sm-9 text-secondary">
+                      {{form.address_line_1}}
+                    </div>
+                  </div>
+                  <hr>
+                  <div class="row">
+                    <div class="col-sm-3">
+                      <h6 class="mb-0">Address line 2</h6>
+                    </div>
+                    <div class="col-sm-9 text-secondary">
+                      {{form.address_line_2}}
+                    </div>
+                  </div>
+                  <hr>
+                  <div class="form-row">
+                    <div class="col form-group">
+                      <b><label for="">City</label></b>
+                      {{form.city}}
+                    </div>
+                    <div class="col form-group">
+                      <b><label for="">Province</label></b>
+                      {{form.state}}
+                    </div>
+                    <div class="col form-group">
+                      <b><label for="">Country</label></b>
+                      {{form.country}}
+                    </div>
+                    <div class="col form-group">
+                      <b><label for="">ZIP Code</label></b>
+                      {{form.zip}}
+                    </div>
+                  </div>
+                  <hr>
+                  <div class="form-group">
+        			        <button type="submit" class="btn btn-primary btn-block"> Apply Changes </button>
+        			    </div> <!-- form-group// -->
+
+                </div>
+              </div>
+            </div>
+          </div>
+   </form>
+
+		</div> <!-- card-body .// -->
+		</article> <!-- order-group.// -->
+	</main>
+</div> <!-- row.// -->
+</div>
+
+
+</section>
+<!-- ========================= SECTION CONTENT END// ========================= -->
+
+{% endblock %}

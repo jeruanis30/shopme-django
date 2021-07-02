@@ -9,7 +9,7 @@
     <h2 class="text-center">Payment Successful</h2>
 	<br>
 	<div class="text-center">
-		<a href="{% url 'store' %}" class="btn btn-success">Shop more</a>
+		<a href="{% url 'dashboard' %}" class="btn btn-success">Check order details</a>
 	</div>
 </div>
 
@@ -38,7 +38,7 @@
                                     {% if order.address_line_2 %}
                                     <li>{{order.address_line_2}}</li>
                                     {% endif %}
-                                    <li>{{order.city}}, {{order.state}}, {{order.country}}</li>
+                                    <li>{{order.city}} {{order.state}} {{order.country}} {% if order.zip is not None %}{{order.zip}}{% endif %}</li>
                                 </ul>
                             </div>
                         </div>
@@ -79,23 +79,23 @@
                                                     {% endif %}
                                                 </td>
                                                 <td class="text-center">{{item.quantity}}</td>
-                                                <td class="text-center">${{item.product_price}} USD</td>
+                                                <td class="text-center">${{item.product_price}} <span class="pl-2">{{currency}}</span></td>
                                             </tr>
                                           {% endfor %}
                                         </tbody>
                                         <tfoot>
                                             <tr>
                                                 <th colspan="2" class="text-right">Sub Total:</th>
-                                                <th class="text-center">${{sub_total}} USD</th>
+                                                <th class="text-center">${{sub_total}} <span class="pl-2">{{currency}}</span></th>
                                             </tr>
                                             <tr>
                                                 <th colspan="2" class="text-right">Tax:</th>
-                                                <th class="text-center">${{order.tax}} USD</th>
+                                                <th class="text-center">${{order.tax}} <span class="pl-2">{{currency}}</span>/th>
                                             </tr>
 
                                             <tr>
                                                 <th colspan="2" class="text-right">Grand Total:</th>
-                                                <th class="text-center">${{order.order_total}} USD</th>
+                                                <th class="text-center">${{order.order_total}} <span class="pl-2">{{currency}}</span></th>
                                             </tr>
                                         </tfoot>
                                     </table>

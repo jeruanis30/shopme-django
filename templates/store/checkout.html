@@ -4,7 +4,7 @@
 {% block content %}
 <section class="section-content py-3 bg">
   <div class="container">
-
+  	{% include 'includes/alerts.html' %}
     <!-- ============================ COMPONENT 1 ================================= -->
   <form action="{% url 'place_order' %}" method="POST">
       {% csrf_token %}
@@ -14,51 +14,57 @@
       <aside class="col-lg-6">
         <div class="card">
           <div class="card-body">
-            <h4 class="card-title mb-4">Billing Address</h4>
+            <h4 class="card-title mb-4">Check Billing Address</h4>
 
               <div class="form-row">
                 <div class="col form-group">
-                  <label for="">First Name</label>
-                  <input type="text" name="first_name" class="form-control" required value="{{user_detail.first_name | title}}">
+                  <label for="">*First Name</label>
+                  {{form.first_name}}
                 </div>
                 <div class="col form-group">
-                  <label for="">Last Name</label>
-                  <input type="text" name="last_name" class="form-control" required value="{{user_detail.last_name | title}}">
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="col form-group">
-                  <label for="">Email</label>
-                  <input type="text" name="email" class="form-control" required value="{{user_detail.email}}">
-                </div>
-                <div class="col form-group">
-                  <label for="">Phone Number</label>
-                  <input type="text" name="phone" class="form-control" required value="{{user_detail.phone_number}}">
+                  <label for="">*Last Name</label>
+                  {{form.last_name}}
                 </div>
               </div>
               <div class="form-row">
                 <div class="col form-group">
-                  <label for="">Address Line 1</label>
-                  <input type="text" name="address_line_1" class="form-control" required value="{{user_detail.address_line_1}}">
+                  <label for="">*Email</label>
+                  {{form.email}}
+                </div>
+                <div class="col form-group">
+                  <label for="">*Phone Number</label>
+                  {{form.phone}}
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="col form-group">
+                  <label for="">*Address Line 1</label>
+                  {{form.address_line_1}}
                 </div>
                 <div class="col form-group">
                   <label for="">Address Line 2</label>
-                  <input type="text" name="address_line_2" class="form-control" value="{{user_detail.address_line_2}}">
+                  {{form.address_line_2}}
                 </div>
               </div>
               <div class="form-row">
                 <div class="col form-group">
-                  <label for="">City</label>
-                  <input type="text" name="city" class="form-control" required value="{{user_detail.city}}">
+                  <label for="">*City</label>
+                  {{form.city}}
                 </div>
                 <div class="col form-group">
-                  <label for="">State</label>
-                  <input type="text" name="state" class="form-control" required value="{{user_detail.state}}">
+                  <label for="">*State</label>
+                  {{form.state}}
                 </div>
                 <div class="col form-group">
-                  <label for="">Country</label>
-                  <input type="text" name="country" class="form-control" required value="{{user_detail.country}}">
+                  <label for="">*Country</label>
+                  {{form.country}}
                 </div>
+
+                <div class="col form-group">
+                  <label for="">*ZIP Code</label>
+                  {{form.zip}}
+                </div>
+
               </div>
               <div class="form-row">
                 <div class="col form-group">
@@ -107,8 +113,8 @@
                   </td>
                   <td>
                     <div class="price-wrap">
-                      <var class="price">$ {{cart_item.sub_total}}</var>
-                      <small class="text-muted"> $ {{cart_item.product.price}} each </small>
+                      <var class="price text-primary">{{currency}}{{cart_item.sub_total}}</var>
+                      <small class="text-muted">{{currency}}{{cart_item.product.price}} each </small>
                     </div> <!-- price-wrap .// -->
                   </td>
                 </tr>
@@ -120,19 +126,19 @@
             <div class="card-body">
                 <dl class="dlist-align">
                   <dt>Total price:</dt>
-                  <dd class="text-right">$ {{total}}</dd>
+                  <dd class="text-right text-primary">{{currency}}{{total}}</dd>
                 </dl>
                 <dl class="dlist-align">
                   <dt>Tax:</dt>
-                  <dd class="text-right"> $ {{tax}}</dd>
+                  <dd class="text-right text-primary">{{currency}}{{tax}}</dd>
                 </dl>
                 <dl class="dlist-align">
                   <dt>Shipping:</dt>
-                  <dd class="text-right"> $ {{shipping_cost}}</dd>
+                  <dd class="text-right text-primary">{{currency}}{{shipping_cost}}</dd>
                 </dl>
                 <dl class="dlist-align">
                   <dt><b>Grand Total:</b></dt>
-                  <dd class="text-right text-dark b"><strong>$ {{grand_total}}</strong></dd>
+                  <dd class="text-right text-warning b"><strong>{{currency}}{{grand_total}}</strong></dd>
                 </dl>
               </div>
               </div>
