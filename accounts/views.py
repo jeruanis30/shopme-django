@@ -3,7 +3,7 @@ from .forms import RegistrationForm, EditProfileForm, UserProfilePicForm, PwdCha
 from .models import Account
 from django.contrib import messages, auth
 from django.contrib.auth.decorators import login_required
-from orders.models import OrderProduct
+from orders.models import OrderProduct, Order
 
 #verification Email
 from django.contrib.sites.shortcuts import get_current_site
@@ -18,7 +18,6 @@ from carts.views import _cart_id
 from store.models import Product
 from django.db.models import Q
 import requests
-
 
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse
@@ -159,9 +158,8 @@ def login(request):
                                         item.save()
 
                                     del_cart_item.delete()
-
                     url = request.META.get('HTTP_REFERER')
-                    cart_item_user = CartItem.objects.filter(user=user) #need to redeclare as the its value changes
+                    cart_item_user = CartItem.objects.filter(user=user) #need to redeclare as its value changed
                     if cart_item_user.count() > 0: #with cartitem
                         try:
                             query = requests.utils.urlparse(url).query
@@ -175,7 +173,6 @@ def login(request):
                                 return redirect(nextPage)
                         except:
                             pass
-
                     elif orderproduct.count() > 0:  #with orderproduct
                         auth.login(request, user)
                         messages.success(request, 'You are now loggedin.')
@@ -184,7 +181,18 @@ def login(request):
                     else:
                         auth.login(request, user)
                         auth.login(request, user)
-                        messages.success(request, 'You are now loggedin.')
+                        return redirect('home')
+                else:
+                    auth.login(request, user)
+                    cart_item_user = CartItem.objects.filter(user=user)
+                    if cart_item_user.count() > 0: #with cartitem
+                        auth.login(request, user)
+                        return redirect('checkout')
+                    elif orderproduct.count() > 0: #with orderproduct
+                        auth.login(request, user)
+                        return redirect('dashboard')
+                    else:
+                        auth.login(request, user)
                         return redirect('home')
 
             except Cart.DoesNotExist: #did not order while logged out just loggedin
@@ -192,17 +200,13 @@ def login(request):
                 cart_item_user = CartItem.objects.filter(user=user)
                 if cart_item_user.count() > 0: #with cartitem
                     auth.login(request, user)
-                    messages.success(request, 'You are now loggedin.')
                     return redirect('checkout')
                 elif orderproduct.count() > 0: #with orderproduct
                     auth.login(request, user)
-                    messages.success(request, 'You are now loggedin.')
                     return redirect('dashboard')
                 else:
                     auth.login(request, user)
-                    messages.success(request, 'You are now loggedin.')
                     return redirect('home')
-
         else: #user is None
             messages.warning(request, 'Username or Password is incorrect!')
             return redirect('login')
@@ -274,7 +278,41 @@ def forgotPasswordReset_page(request):
 def dashboard(request):
     current_user = request.user
     if current_user.is_admin or current_user.is_superadmin:
-        orderproducts = OrderProduct.objects.all()
+        order = Order.objects.all().filter(is_ordered=True)
+        count = order.count()
+        delivered = Order.objects.filter(status='Delivered')
+        delivered_count=delivered.count()
+        OFD = Order.objects.filter(status='Out for delivery')
+        OFD_count = OFD.count()
+        pending = Order.objects.filter(status='Pending')
+        pending_count = pending.count()
+        cancel = Order.objects.filter(status='Cancelled')
+        cancel_count = cancel.count()
+
+
+    else:
+        order = Order.objects.filter(~Q(status='Deleted'), user=current_user, is_ordered=True).order_by('-id')
+        count = order.count()
+        delivered = Order.objects.filter(user=current_user, status='Delivered')
+        delivered_count=delivered.count()
+        OFD = Order.objects.filter(user=current_user, status='Out for delivery')
+        OFD_count = OFD.count()
+        pending = Order.objects.filter(user=current_user, status='Pending')
+        pending_count = pending.count()
+        cancel = Order.objects.filter(user=current_user, status='Cancelled')
+        cancel_count = cancel.count()
+
+
+    context = {'order':order, 'count':count,'delivered':delivered_count,'OFD':OFD_count,'pending':pending_count,'cancel':cancel_count}
+    return render(request, 'accounts/dashboard.html', context)
+
+@login_required(login_url = 'login')
+def dashboard_single(request):
+    current_user = request.user
+    if current_user.is_admin or current_user.is_superadmin:
+        orderproducts = OrderProduct.objects.all().filter(ordered=True).order_by('-updated_at')
+
+        #get productsorder count
         count = orderproducts.count()
         delivered = OrderProduct.objects.filter(status='Delivered')
         delivered_count=delivered.count()
@@ -284,8 +322,9 @@ def dashboard(request):
         pending_count = pending.count()
         cancel = OrderProduct.objects.filter(status='Cancelled')
         cancel_count = cancel.count()
+
     else:
-        orderproducts = OrderProduct.objects.filter(user=current_user).order_by('-id')
+        orderproducts = OrderProduct.objects.filter(user=current_user, ordered=True).order_by('-updated_at')
         count = orderproducts.count()
         delivered = OrderProduct.objects.filter(user=current_user, status='Delivered')
         delivered_count=delivered.count()
@@ -297,7 +336,7 @@ def dashboard(request):
         cancel_count = cancel.count()
 
     context = {'orderproducts':orderproducts, 'count':count,'delivered':delivered_count,'OFD':OFD_count,'pending':pending_count,'cancel':cancel_count}
-    return render(request, 'accounts/dashboard.html', context)
+    return render(request, 'accounts/dashboard_single.html', context)
 
 
 def forgotPassword(request):
@@ -336,6 +375,7 @@ def my_profile(request):
 @login_required(login_url = 'login')
 def edit_profile(request):
     accounts = Account.objects.get(email=request.user)
+    user_country = accounts.country
     if request.method == 'POST':
         propic_form = UserProfilePicForm(request.POST, request.FILES, instance=accounts)
         form = EditProfileForm(request.POST, instance=accounts)
@@ -359,7 +399,7 @@ def edit_profile(request):
         form = EditProfileForm(instance=accounts)
         propic_form = UserProfilePicForm(instance=accounts)
 
-    context={'form':form, 'accounts':accounts, 'propic_form':propic_form}
+    context={'form':form, 'accounts':accounts, 'propic_form':propic_form, 'user_country':user_country}
     return render(request, 'accounts/edit_profile.html', context)
 
 

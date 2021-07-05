@@ -58,7 +58,7 @@ class Account(AbstractBaseUser):
 
     address_line_1 = models.CharField(max_length=51, blank=True)
     address_line_2 = models.CharField(max_length=51, blank=True)
-    country = models.CharField(max_length=54, blank=True)
+    country = models.CharField(max_length=54, blank=True, default="Philippines")
     state = models.CharField(max_length=54, blank=True)
     city = models.CharField(max_length=54, blank=True)
     zip = models.IntegerField(null=True, blank=True)

@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
-
+{% load currency %}
 {% block content %}
 <!-- ========================= SECTION PAGETOP ========================= -->
 {% if 'search' in request.path %}
@@ -46,38 +46,9 @@
 			</div> <!-- card-body.// -->
 		</div>
 	</article> <!-- filter-group  .// -->
-	<article class="filter-group">
-		<header class="card-header">
-			<a href="#" data-toggle="collapse" data-target="#collapse_4" aria-expanded="true" class="">
-				<i class="icon-control fa fa-chevron-down"></i>
-				<h6 class="title">Sizes </h6>
-			</a>
-		</header>
-		<div class="filter-content collapse show" id="collapse_4" style="">
-			<div class="card-body">
-			  <label class="checkbox-btn">
-			    <input type="checkbox">
-			    <span class="btn btn-light"> XS </span>
-			  </label>
 
-			  <label class="checkbox-btn">
-			    <input type="checkbox">
-			    <span class="btn btn-light"> SM </span>
-			  </label>
 
-			  <label class="checkbox-btn">
-			    <input type="checkbox">
-			    <span class="btn btn-light"> LG </span>
-			  </label>
-
-			  <label class="checkbox-btn">
-			    <input type="checkbox">
-			    <span class="btn btn-light"> XXL </span>
-			  </label>
-		</div><!-- card-body.// -->
-		</div>
-	</article> <!-- filter-group .// -->
-
+ {% if currency == 'PHP' %}
 	<article class="filter-group">
 		<header class="card-header">
 			<a href="#" data-toggle="collapse" data-target="#collapse_3" aria-expanded="true" class="">
@@ -85,39 +56,35 @@
 				<h6 class="title">Price range </h6>
 			</a>
 		</header>
-		<div class="filter-content collapse show" id="collapse_3" style="">
-			<div class="card-body">
+		<form method="get">
+			<div class="filter-content collapse show" id="collapse_3" style="">
+				<div class="card-body">
+					<div class="form-row">
+					<div class="form-group col-md-6">
+					  <label for="id_min">Min</label>
+						{% if request.GET.min != '' and request.GET.max != '' %}
+							<input type="number" name="min" value="{{request.GET.min}}" step="any" id="id_min" class="form-control">
+						{% else %}
+						<input type="number" name="min" step="any" id="id_min" class="form-control">
+						{% endif %}
+					</div>
+					<div class="form-group text-right col-md-6">
+					  <label for="id_max">Max</label>
+						{% if request.GET.min != '' and request.GET.max != '' %}
+						<input type="number" name="max" value="{{request.GET.max}}" step="any" id="id_max" class="form-control">
+						{% else %}
+						<input type="number" name="max" step="any" id="id_max" class="form-control">
+						{% endif %}
+					</div>
+					</div> <!-- form-row.// -->
+						<button class="btn btn-primary" type="submit">Search</button>
+					  <a class="btn btn-warning" href="{% url 'store' %}">Clear Search</a>
+				</div><!-- card-body.// -->
+			</div>
+		</form>
+		{% endif %}
 
-				<div class="form-row">
-				<div class="form-group col-md-6">
-				  <label>Min</label>
-				  <!-- <input class="form-control" placeholder="$0" type="number"> -->
-				  	<select class="mr-2 form-control">
-						<option value="0">$0</option>
-						<option value="50">$50</option>
-						<option value="100">$100</option>
-						<option value="150">$150</option>
-						<option value="200">$200</option>
-						<option value="500">$500</option>
-						<option value="1000">$1000</option>
-					</select>
-				</div>
-				<div class="form-group text-right col-md-6">
-				  <label>Max</label>
-				  	<select class="mr-2 form-control">
-						<option value="50">$50</option>
-						<option value="100">$100</option>
-						<option value="150">$150</option>
-						<option value="200">$200</option>
-						<option value="500">$500</option>
-						<option value="1000">$1000</option>
-						<option value="2000">$2000+</option>
-					</select>
-				</div>
-				</div> <!-- form-row.// -->
-				<button class="btn btn-block btn-primary">Apply</button>
-			</div><!-- card-body.// -->
-		</div>
+
 	</article> <!-- filter-group .// -->
 
 </div> <!-- card.// -->
@@ -146,7 +113,7 @@
 				<div class="fix-height">
 					<a href="{{product.get_url}}" class="title">{{product.product_name}}</a>
 					<div class="price-wrap mt-2">
-						<span class="price text-primary">{{currency}}{{product.price}}</span>
+						<span class="price text-primary">{{symbol}}{{ product.price | currency:currency }} </span>
 					</div> <!-- price-wrap.// -->
 				</div>
 				<a href="{{product.get_url}}" class="btn btn-block btn-primary">View Details </a>

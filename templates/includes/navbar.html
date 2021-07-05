@@ -14,7 +14,7 @@
 
     </li>
     <li class="nav-item dropdown">
-      <a href="#" class="nav-link"> <span class="pl-2">{{currency}}</span> </a>
+      <a href="#" class="nav-link"> <span class="pl-2">{% if currency %}Currency: <span class="text-primary b">{{currency}}</span>{% else%}{% endif %}</span> </a>
     </li>
     </ul>
     <ul class="navbar-nav">

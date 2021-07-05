@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
-
+{% load currency %}
 {% block content %}
 
 
@@ -9,7 +9,7 @@
     <h2 class="text-center">Payment Successful</h2>
 	<br>
 	<div class="text-center">
-		<a href="{% url 'dashboard' %}" class="btn btn-success">Check order details</a>
+		<a href="{% url 'dashboard' %}" class="btn btn-success">Check all orders</a>
 	</div>
 </div>
 
@@ -79,23 +79,33 @@
                                                     {% endif %}
                                                 </td>
                                                 <td class="text-center">{{item.quantity}}</td>
-                                                <td class="text-center">${{item.product_price}} <span class="pl-2">{{currency}}</span></td>
+                                                <td class="text-center">{{symbol}}{{ item.product_price|currency:currency }}</td>
                                             </tr>
                                           {% endfor %}
                                         </tbody>
                                         <tfoot>
                                             <tr>
                                                 <th colspan="2" class="text-right">Sub Total:</th>
-                                                <th class="text-center">${{sub_total}} <span class="pl-2">{{currency}}</span></th>
+                                                <th class="text-center">{{symbol}}{{ sub_total|currency:currency }}</th>
                                             </tr>
                                             <tr>
                                                 <th colspan="2" class="text-right">Tax:</th>
-                                                <th class="text-center">${{order.tax}} <span class="pl-2">{{currency}}</span>/th>
+                                                <th class="text-center">{{symbol}}{{ order.tax|currency:currency }}</th>
                                             </tr>
 
                                             <tr>
+                                                <th colspan="2" class="text-right">Shipping:</th>
+                                                {% if order.shipping %}
+                                                <th class="text-center">{{symbol}}{{ order.shipping|currency:currency }}</th>
+                                                {% else %}
+                                                <th class="text-center">-included-</th>
+                                                {% endif %}
+                                            </tr>
+
+
+                                            <tr>
                                                 <th colspan="2" class="text-right">Grand Total:</th>
-                                                <th class="text-center">${{order.order_total}} <span class="pl-2">{{currency}}</span></th>
+                                                <th class="text-center">{{symbol}}{{ order.order_total|currency:currency }}</th>
                                             </tr>
                                         </tfoot>
                                     </table>

@@ -1,3 +1,4 @@
+
 {% autoescape off %}
 
 Hi {{user.first_name}},
@@ -5,7 +6,7 @@ Hi {{user.first_name}},
 YOUT ORDER HAS BEEN RECIEVED
 
 Order Number: {{order.order_number}}
-Order Total: ${{order.order_total}}
+Order Total: {{currency}}{{ amount_total }}
 {% if order.order_note %}
 Order Note: {{order.order_note | capfirst}}
 {% endif %}

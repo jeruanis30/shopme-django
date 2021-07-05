@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
-
+{% load currency %}
 {% block content %}
 <section class="section-content py-3 bg">
   <div class="container">
@@ -66,8 +66,8 @@
                     </td>
                     <td>
                       <div class="price-wrap">
-                        <var class="price text-primary">{{currency}}{{cart_item.sub_total}}</var>
-                        <small class="text-muted">{{currency}}{{cart_item.product.price}} each </small>
+                        <var class="price text-primary">{{symbol}}{{ cart_item.sub_total|currency:currency }}</var>
+                        <small class="text-muted">{{symbol}}{{ cart_item.product.price|currency:currency }} each </small>
                       </div> <!-- price-wrap .// -->
                     </td>
                   </tr>
@@ -84,19 +84,19 @@
           <div class="card-body">
             <dl class="dlist-align">
               <dt>Total price:</dt>
-              <dd class="text-right text-primary">{{currency}}{{total}}</dd>
+              <dd class="text-right text-primary">{{symbol}}{{ total|currency:currency }}</dd>
             </dl>
             <dl class="dlist-align">
               <dt>Tax:</dt>
-              <dd class="text-right text-primary">{{currency}}{{tax}}</dd>
+              <dd class="text-right text-primary">{{symbol}}{{ tax|currency:currency }}</dd>
             </dl>
             <dl class="dlist-align">
               <dt>Shipping:</dt>
-              <dd class="text-right text-primary">{{currency}}{{shipping_cost}}</dd>
+              <dd class="text-right text-primary">{{symbol}}{{ shipping_cost|currency:currency }}</dd>
             </dl>
             <dl class="dlist-align">
               <dt>Grand Total:</dt>
-              <dd class="text-right text-warning b"><strong> {{currency}}{{grand_total}}</strong></dd>
+              <dd class="text-right text-warning b"><strong> {{symbol}}{{ grand_total|currency:currency }}</strong></dd>
             </dl>
             <hr>
             <p class="text-center mb-3">
@@ -134,7 +134,7 @@
   }
 
 
-  var amount = "{{grand_total}}";
+  var amount = "{{ grand_total|currency:currency }}";
   var url = "{% url 'payments' %}";
   const csrftoken = getCookie('csrftoken');
   var orderID = "{{order.order_number}}";
@@ -181,6 +181,7 @@
                           status: details.status,
                         }),
                       })
+                        // at return response
                         .then(response => response.json())
                         .then(data => {
                           // console.log('Success', data);

@@ -1,8 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load currency %}
 {% block content %}
-
-
 
 <!-- ========================= SECTION MAIN ========================= -->
 <section class="section-intro padding-y-sm">
@@ -33,7 +32,7 @@
 			<a href="{{product.get_url}}" class="img-wrap"> <img src="{{product.images.url}}"> </a>
 			<figcaption class="info-wrap">
 				<a href="{{product.get_url}}" class="title">{{product.product_name}}</a>
-				<div class="price mt-1 text-primary">{{currency}}{{product.price}} </div> <!-- price-wrap.// -->
+				<div class="price mt-1 text-primary">{{symbol}}{{ product.price|currency:currency }} </div> <!-- price-wrap.// -->
 			</figcaption>
 		</div>
 	</div> <!-- col.// -->

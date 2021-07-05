@@ -16,12 +16,15 @@ class Payment(models.Model):
 
 
 class Order(models.Model):
-    STATUS = {
-        ('New', 'New'),
-        ('Accepted', 'Accepted'),
-        ('Completed', 'Completed'),
+
+    STATUS = (
+        ('Pending', 'Pending'),
+        ('Out for delivery', 'Out for delivery'),
+        ('Delivered', 'Delivered'),
         ('Cancelled', 'Cancelled'),
-    }
+        ('Refund_Paid', 'Refund_Paid'),
+        ('Deleted', 'Deleted')
+    )
 
     user = models.ForeignKey(Account, on_delete=models.SET_NULL, null=True)
     payment = models.ForeignKey(Payment, on_delete=models.SET_NULL, blank=True, null=True)
@@ -37,10 +40,13 @@ class Order(models.Model):
     city = models.CharField(max_length=54)
     zip = models.IntegerField(null=True, blank=True)
     order_note = models.CharField(max_length=200, blank=True)
+    currency = models.CharField(max_length=10, blank=True)
+    item_count = models.IntegerField(null=True)
     order_total = models.FloatField()
     shipping = models.FloatField(null=True)
+    recieved = models.BooleanField(default=False)
     tax = models.FloatField()
-    status = models.CharField(max_length=10, choices=STATUS, default='New')
+    status = models.CharField(max_length=25, choices=STATUS, default='Pending')
     ip = models.CharField(max_length=21, blank=True)
     is_ordered = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -52,8 +58,8 @@ class Order(models.Model):
     def address(self):
         return f'{self.address_line_1} {self.address_line_2}, {self.city}, {self.state}, {self.country}, {self.zip}'
 
-    def __str__(self):
-        return self.user.username
+    def __unicode__(self):
+        return self.user.usernmae
 
 
 class OrderProduct(models.Model):
@@ -73,8 +79,9 @@ class OrderProduct(models.Model):
     quantity = models.IntegerField()
     product_price = models.FloatField()
     ordered = models.BooleanField(default=False)
-    status = models.CharField(max_length=200, null=True, choices = STATUS, default='Pending')
+    status = models.CharField(max_length=25, null=True, choices = STATUS, default='Pending')
     ip = models.CharField(max_length=21, blank=True)
+    recieved = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -11,11 +11,15 @@ from django.template.loader import render_to_string
 from django.core.mail import EmailMessage
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-
+from accounts.models import Account
+from currencies.models import Currency
+import decimal
+from decimal import Decimal
 
 # Create your views here.
 
 #place_order and payments have the same html template called payments
+@login_required(login_url='login')
 def payments(request):
 
     #loading the content of the body
@@ -87,11 +91,33 @@ def payments(request):
     else:
         pass
 
+    #need to convert here since in email is not covered by the currency converter
+    user = request.user
+    accounts = Account.objects.get(email=user)
+    country = accounts.country
+    if country == 'Philippines':
+        currency = 'PHP'
+    else:
+        currency = 'USD'
+    current_currency = Currency.objects.get(code=currency)
+
+    if currency != 'PHP':
+        factor = current_currency.factor
+    else:
+        factor=1
+
+    order_total = order.order_total
+    amount_total = Decimal(order_total)*factor #must be both decimal
+    amount_total = '{:.2f}'.format(Decimal(amount_total))
+
     #Send order recieved email to customer
     mail_subject = 'Thank you for your order!'
     message = render_to_string('orders/order_recieved_email.html', {
         'user':request.user,
         'order':order,
+        'currency':currency,
+        'amount_total':amount_total
+
     })
     to_email = request.user.email
     send_email = EmailMessage(mail_subject, message, to=[to_email])
@@ -105,10 +131,9 @@ def payments(request):
 
     return JsonResponse(data)
 
-
+@login_required(login_url='login')
 def place_order(request, total=0, quantity=0):
     current_user = request.user
-
     #if the cart count is 0 redirect back to shop
     cart_items = CartItem.objects.filter(user=current_user)
     cart_count = cart_items.count()
@@ -117,14 +142,36 @@ def place_order(request, total=0, quantity=0):
 
     grand_total=0
     tax = 0
+
+    #getting the currency
+    user = request.user
+    accounts = Account.objects.get(email=user)
+    country = accounts.country
+    if country == 'Philippines':
+        currency = 'PHP'
+    else:
+        currency = 'USD'
+
     #summary of computation
     for cart_item in cart_items:
         total+=(cart_item.product.price*cart_item.quantity)
         quantity+=cart_item.quantity
     tax = (12 * total)/100
     #get the location and provide the shipping for that location
-    shipping_cost = 10
+    shipping_cost_max = (30 * total)/100
+
+    #shipping set to minimu
+    if currency == 'PHP':
+        shipping_cost_min = 150
+        shipping_cost = max(shipping_cost_max, shipping_cost_min)
+    else:
+        shipping_cost_min = 8000
+        shipping_cost = max(shipping_cost_max, shipping_cost_min)#get the max value for shipping
+
+    #no need to convert here since it willl be converted at its templace
     grand_total = total + tax + shipping_cost
+    grand_total ='{:.2f}'.format(Decimal(grand_total))
+
 
     if request.method == 'POST':
         form = OrderForm(request.POST)
@@ -151,6 +198,8 @@ def place_order(request, total=0, quantity=0):
             data.state = form.cleaned_data['state']
             data.city = form.cleaned_data['city']
             data.zip = form.cleaned_data['zip']
+            data.currency = form.cleaned_data['currency']
+            data.item_count = form.cleaned_data['item_count']
             data.order_note = form.cleaned_data['order_note']
             data.order_total = grand_total
             data.shipping = shipping_cost
@@ -182,6 +231,7 @@ def place_order(request, total=0, quantity=0):
     else:
         return redirect('checkout')
 
+@login_required(login_url='login')
 def order_complete(request):
     order_number = request.GET.get('order_number')
     transID = request.GET.get('payment_id')
@@ -222,29 +272,12 @@ def order_complete(request):
 
 
 @login_required(login_url='login')
-def update_order_status(request, pk):
-    product = request.GET.get('pr')
-    transID = request.GET.get('trans')
-    orderproduct = OrderProduct.objects.get(id=pk)
-    form = OrderStatusForm(instance=orderproduct)
-    if request.method == 'POST':
-        form = OrderStatusForm(request.POST, instance=orderproduct)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Successfully updated the Order Status.')
-            return redirect('dashboard')
-    context = {'form': form, 'product': product, 'transID':transID}
-    return render(request, 'orders/update_order_status.html', context)
+def order_detail(request, order_number):
+    order = Order.objects.get(order_number=order_number)
+    payment_id = order.payment
+    ordered_products = OrderProduct.objects.filter(payment=payment_id)
 
-
-@login_required(login_url='login')
-def order_detail(request, trans_id):
-    ordered_products = OrderProduct.objects.filter(payment__payment_id=trans_id)
-    order = Order.objects.get(payment__payment_id=trans_id)
-    order_number = order.order_number
-    transID = trans_id
-
-    payment = Payment.objects.get(payment_id=transID)
+    payment = Payment.objects.get(payment_id=payment_id)
     if payment.status == 'COMPLETED':
         pay_status = 'PAID'
     else:
@@ -269,3 +302,60 @@ def order_detail(request, trans_id):
     }
 
     return render(request, 'orders/order_detail.html', context)
+
+@login_required(login_url='login')
+def update_order_status(request, pk):
+    user = request.GET.get('usr')
+    transID = request.GET.get('trans')
+    order = Order.objects.get(payment__payment_id=pk, is_ordered=True)
+    form = OrderStatusForm(instance=order)
+    if request.method == 'POST':
+        form = OrderStatusForm(request.POST, instance=order)
+        if form.is_valid():
+            form.save()
+
+        #update the status of orderproducts
+        orderproduct = OrderProduct.objects.filter(ordered=True, payment__payment_id=pk)
+        for item in orderproduct:
+            orderproduct_single = OrderProduct.objects.get(ordered=True, payment__payment_id=pk, product__product_name=item)
+            form = OrderStatusForm(request.POST, instance=orderproduct_single)
+            if form.is_valid():
+                form.save()
+
+        messages.success(request, 'Successfully updated the Order Status.')
+        return redirect('dashboard')
+    context = {'form': form, 'transID':transID}
+    return render(request, 'orders/update_order_status.html', context)
+
+
+@login_required(login_url='login')
+def deleted_order(request, pk):
+    order = Order.objects.get(payment__payment_id=pk, user=request.user)
+    if request.method == 'POST':
+        deleted = request.POST['deleted']
+        if deleted == 'deleted':
+            order.status = 'Deleted'
+            order.save()
+            return redirect('dashboard')
+
+
+#for admin only
+@login_required(login_url='login')
+def deleteOrder(request, pk):
+    order = Order.objects.get(payment__payment_id=pk)
+    if request.method == 'POST':
+        order.delete()
+        messages.warning(request, 'Successfully deleted the item.')
+        return redirect('dashboard')
+
+
+@login_required(login_url='login')
+def item_recieved(request, order_number):
+    order = Order.objects.get(user=request.user, order_number=order_number)
+    if request.method == 'POST':
+        recieved = request.POST['recieved']
+        if recieved == '1':
+            order.recieved = True
+            order.save()
+            messages.success(request, 'Thank you for confirming recieved.')
+            return redirect('dashboard')

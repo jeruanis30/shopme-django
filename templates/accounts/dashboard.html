@@ -35,33 +35,88 @@
 				<table class="table table-md">
 					<thead>
 						<tr>
-							<th scope="col">Product</th>
 							<th scope="col">Customer</th>
 							<th scope="col">Transaction#</th>
+							<th scope="col">Content Qty</th>
 							<th scope="col">Ordered</th>
+							<th scope="col">Price</th>
 							<th scope="col">Status</th>
 							{% if user.is_admin %}
 								<th scope="col">Update</th>
+							{% else %}
+							<th scope="col">Action</th>
 							{% endif %}
+							<th scope="col"></th>
+
 						</tr>
 					</thead>
 					<tbody>
-						{% for order in orderproducts %}
+
+						{% for order in order  %}
 						 <tr>
-							 <td>{{ order.product.product_name}} ({% for i in order.variation.all %} {{ i }} {% endfor %})</td>
 							 <td>{{ order.user }}</td>
-							 <td><a href="{% url 'order_detail' order.payment.payment_id %}">{{ order.payment }}</a></td>
-							 <td>{{ order.date_updated}}</td>
+							 <td><a href="{% url 'order_detail' order.order_number %}">{{ order.payment }}</a></td>
+							  <td>{{order.item_count}}</td>
+							 <td>{{ order.updated_at}}</td>
+							 <td class="text-success b">{{order.currency}}{{ order.order_total }}</td>
 							 <td>{{ order.status }}</td>
+
 							 {% if user.is_admin %}
-								 {% if order.status == 'Cancelled' or order.status == 'Delivered' %}
-								 <td><a class="btn btn-sm btn-danger" href="#">Delete</a></td>
+								 {% if order.status == 'Deleted' %}
+									 <form action="{% url 'deleteOrder' order.payment %}" method="POST">
+										 {% csrf_token %}
+									 	<td>
+											<input type="hidden" name="delo" value="delo"><button type="submit" class="btn btn-sm btn-success">Deleted</button>
+										</td>
+									 </form>
+								 {% elif order.recieved == True %}
+								 <td>
+											<!-- empty -->
+								 </td>
 								 {% else %}
-								 <td><a class="btn btn-sm btn-info" href="{% url 'update_order_status' order.id %}?pr={{ order.product.product_name}}&trans={{ order.payment }}">Update</a></td>
+									 <td><a class="btn btn-sm btn-info" href="{% url 'update_order_status' order.payment %}?usr={{ order.user}}&trans={{ order.payment }}">Update</a></td>
 								 {% endif %}
+
+                     {% if order.status == 'Delivered' %}
+												 {% if order.recieved == True %}
+													 <td>
+															<button type="button" class="btn btn-sm btn-success">Recieved</button>
+													 </td>
+													{% else %}
+														<td>
+															<button type="button" class="btn btn-sm btn-danger">Recieved</button>
+														</td>
+												 {% endif %}
+											 {% endif %}
+
+								{% else %}
+									{% if order.status == 'Delivered' and order.recieved == False %}
+									 <form action="{% url 'item_recieved' order.order_number %}" method='POST'>
+										 {% csrf_token %}
+								      <td>
+												<input type="hidden" name="recieved" value="1"><button type="submit" class="btn btn-sm btn-danger">Recieved</button>
+											</td>
+										</form>
+									{% elif order.status == 'Delivered' and order.recieved == True %}
+ 									   <td>
+ 									   	  <button type="button" class="btn btn-sm btn-success">Recieved</button>
+ 									   </td>
+									{% else %}
+									    <td></td>
+								 	{% endif %}
+									{% if order.recieved == True and order.status != 'Deleted' %}
+									<form action="{% url 'deleted_order' order.payment %}" method="POST">
+										{% csrf_token %}
+									   <td>
+											 <input type="hidden" name="deleted" value="deleted"><button type="submit" class="btn btn-sm btn-danger">Delete</button>
+									   </td>
+									</form>
+							 		{% endif %}
 							 {% endif %}
+
 						 </tr>
 						{% endfor %}
+
 					</tbody>
 				</table>
 			{% endif %}

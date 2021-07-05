@@ -9,29 +9,36 @@ from .forms import ReviewForm
 from .models import ReviewRating
 from django.contrib import messages
 from orders.models import OrderProduct
+from .filter import ProductPriceFilter
 # import math
 
 # Create your views here.
 
 def store(request, category_slug=None):
+    product_all=Product.objects.all()
     categories = None
     products = None
+    url = request.META.get("HTTP_REFERER")
     if category_slug != None:
         categories = get_object_or_404(Category, slug=category_slug)
         products = Product.objects.filter(category = categories, is_available=True)
-        paginator = Paginator(products, 1)
+        paginator = Paginator(products, 6) #search result qty
         page_number = request.GET.get('page')
         paged_products = paginator.get_page(page_number)
         product_count = products.count()
+        my_filter = None
     else:
         products = Product.objects.all().filter(is_available = True)
-        paginator = Paginator(products, 3)
+        my_filter = ProductPriceFilter(request.GET, queryset=products)
+        products = my_filter.qs
+        paginator = Paginator(products, 9) #search result qty
         page_number = request.GET.get('page')
         paged_products = paginator.get_page(page_number)
         product_count= products.count()
 
-    context = {'products':paged_products, 'product_count': product_count}
+    context = {'products':paged_products, 'product_count': product_count, 'my_filter':my_filter, 'url':url}
     return render(request, 'store/store.html', context)
+
 
 def product_detail(request, category_slug, product_slug):
     try:
@@ -61,6 +68,7 @@ def product_detail(request, category_slug, product_slug):
     context={'single_product': single_product, 'in_cart':in_cart, 'orderproduct':orderproduct, 'reviews':reviews, 'images':product_gallery}
     return render(request, 'store/product_detail.html', context)
 
+
 def search(request):
     if 'keyword' in request.GET:
         keyword = request.GET['keyword']
@@ -73,6 +81,7 @@ def search(request):
 
 def submit_review(request, product_id):
     url = request.META.get('HTTP_REFERER')
+    user = Account.objects.get(email=request.email)
     if request.method == 'POST':
         try:
             reviews = ReviewRating.objects.get(user__id=request.user.id, product__id=product_id)
@@ -90,5 +99,5 @@ def submit_review(request, product_id):
                 data.product_id = product_id
                 data.user_id = request.user.id
                 data.save()
-                messages.success('Thank you! Your review has been submitted.')
+                messages.success(reqeust, 'Thank you! Your review has been submitted.')
                 return redirect(url)

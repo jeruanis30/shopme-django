@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 
 from pathlib import Path
 from decouple import config
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
@@ -45,6 +46,8 @@ INSTALLED_APPS = [
     'orders',
     'django.contrib.humanize',
     'admin_honeypot',
+    'currencies',
+    'django_filters',
 ]
 
 MIDDLEWARE = [
@@ -62,7 +65,7 @@ ROOT_URLCONF = 'shopme.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['templates'],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -72,6 +75,8 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'category.context_processors.menu_links',
                 'carts.context_processors.counter',
+                'currencies.context_processors.currencies',
+                'carts.context_processors.country_cur',
             ],
         },
     },
@@ -132,19 +137,19 @@ USE_TZ = True
 
 #static files configurations
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR /'static' #referring to the main folder then the static folder BASE_DIR is the shopme folder
-STATICFILES_DIRS = [ 'shopme/static',]
+STATIC_ROOT = os.path.join(BASE_DIR, 'static') #referring to the main folder then the static folder BASE_DIR is the shopme folder
+STATICFILES_DIRS = [ os.path.join(BASE_DIR, 'shopme/static')]
 
 #mdia files configurations
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR /'media'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 #SMTP configuration for gmail
-EMAIL_HOST =  config('EMAIL_HOST')
-EMAIL_PORT = config('EMAIL_PORT', cast=int)
-EMAIL_HOST_USER = config('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', cast=bool)
+# EMAIL_HOST =  config('EMAIL_HOST')
+# EMAIL_PORT = config('EMAIL_PORT', cast=int)
+# EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+# EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+# EMAIL_USE_TLS = config('EMAIL_USE_TLS', cast=bool)
 
 #for develpement only
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

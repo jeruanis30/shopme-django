@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
-
+{% load currency %}
 {% block content %}
 <section class="section-content py-3 bg">
   <div class="container">
@@ -63,7 +63,12 @@
                 <div class="col form-group">
                   <label for="">*ZIP Code</label>
                   {{form.zip}}
+                  <!-- must include in the form list -->
+                  <input type="hidden" name="currency" value="{{currency}}">
+                  <input type="hidden" name="item_count" value="{{cart_count}}">
                 </div>
+
+
 
               </div>
               <div class="form-row">
@@ -113,8 +118,8 @@
                   </td>
                   <td>
                     <div class="price-wrap">
-                      <var class="price text-primary">{{currency}}{{cart_item.sub_total}}</var>
-                      <small class="text-muted">{{currency}}{{cart_item.product.price}} each </small>
+                      <var class="price text-primary">{{symbol}}{{ cart_item.sub_total|currency:currency }}</var>
+                      <small class="text-muted">{{symbol}}{{ cart_item.product.price|currency:currency }} each </small>
                     </div> <!-- price-wrap .// -->
                   </td>
                 </tr>
@@ -126,19 +131,20 @@
             <div class="card-body">
                 <dl class="dlist-align">
                   <dt>Total price:</dt>
-                  <dd class="text-right text-primary">{{currency}}{{total}}</dd>
+                  <dd class="text-right text-primary">{{symbol}}{{ total|currency:currency }}</dd>
                 </dl>
                 <dl class="dlist-align">
                   <dt>Tax:</dt>
-                  <dd class="text-right text-primary">{{currency}}{{tax}}</dd>
+                  <dd class="text-right text-primary">{{symbol}}{{tax|currency:currency }}</dd>
                 </dl>
                 <dl class="dlist-align">
                   <dt>Shipping:</dt>
-                  <dd class="text-right text-primary">{{currency}}{{shipping_cost}}</dd>
+                  <dd class="text-right text-primary">{{symbol}}{{shipping_cost|currency:currency }}</dd>
                 </dl>
                 <dl class="dlist-align">
                   <dt><b>Grand Total:</b></dt>
-                  <dd class="text-right text-warning b"><strong>{{currency}}{{grand_total}}</strong></dd>
+                  {% load humanize %}
+                  <dd class="text-right text-warning b"><strong>{{symbol}}{{grand_total|currency:currency }}</strong></dd>
                 </dl>
               </div>
               </div>

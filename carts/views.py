@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 from orders.models import Order
 from accounts.models import Account
 from accounts.forms import CheckoutForm
+from currencies.models import Currency
 
 # Create your views here.
 def _cart_id(request): #underscore means that it is private
@@ -184,6 +185,7 @@ def cart(request, total=0, quantity=0, cart_items=None):
                 quantity+=cart_item.quantity
             tax = (12 * total)/100
             grand_total = total + tax
+            grand_total = '{:.2f}'.format(float(grand_total))
 
         else:
             cart = Cart.objects.get(cart_id=_cart_id(request))
@@ -194,6 +196,7 @@ def cart(request, total=0, quantity=0, cart_items=None):
                 quantity+=cart_item.quantity
             tax = (2 * total)/100
             grand_total = total + tax
+            grand_total = '{:.2f}'.format(float(grand_total))
     except ObjectDoesNotExist:
             pass
     context={'total':total, 'quantity':quantity, 'cart_items':cart_items, 'tax':tax, 'grand_total':grand_total}
@@ -203,6 +206,15 @@ def cart(request, total=0, quantity=0, cart_items=None):
 def checkout(request, total=0, quantity=0, cart_items=None):
     user_details = Account.objects.get(email=request.user)
     form = CheckoutForm(instance = user_details)
+
+    #getting the currency
+    user = request.user
+    accounts = Account.objects.get(email=user)
+    country = accounts.country
+    if country == 'Philippines':
+        currency = 'PHP'
+    else:
+        currency = 'USD'
     try:
         #inititalize the variable first
         tax=0
@@ -218,8 +230,18 @@ def checkout(request, total=0, quantity=0, cart_items=None):
             total+=(cart_item.product.price*cart_item.quantity)
             quantity+=cart_item.quantity
         tax = (12 * total)/100
-        shipping_cost = 10
+        shipping_cost_max = (30 * total)/100
+
+        #shipping set to minimu
+        if currency == 'PHP':
+            shipping_cost_min = 150
+            shipping_cost = max(shipping_cost_max, shipping_cost_min)#get the max value for shipping
+        else:
+            shipping_cost_min = 8000
+            shipping_cost = max(shipping_cost_max, shipping_cost_min)
+
         grand_total = total + tax + shipping_cost
+        grand_total = '{:.2f}'.format(float(grand_total))
 
     except ObjectDoesNotExist:
             pass

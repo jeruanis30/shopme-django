@@ -28,4 +28,5 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),
     # path('accounts/', include('django.contrib.auth.urls')), #nneded for change password
     path('orders/', include('orders.urls')),
+    path('currencies/', include('currencies.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

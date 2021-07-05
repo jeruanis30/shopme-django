@@ -1,6 +1,8 @@
 from .models import Cart, CartItem
 from .views import _cart_id
 from accounts.models import Account
+import json
+import requests
 
 def counter(request):
     cart_count=0
@@ -20,16 +22,37 @@ def counter(request):
         except Cart.DoesNotExist:
             cart_count = 0
 
+    return dict(cart_count=cart_count)
+
+def country_cur(request):
+    ip = requests.get('https://api.ipify.org?format=json')
+    ip_data = json.loads(ip.text)
+    ip_address = '112.206.158.43'
+    # ip_address=ip_data['ip'] this is for production
+    req = requests.get('http://ip-api.com/json/' + ip_address)
+    location = req.text #getting the content into text
+    loc_data = json.loads(location)
+    country = loc_data['country']
+    country_code = loc_data['countryCode']
     user = request.user
-    if user.is_authenticated:
-        currency=0
-        accounts = Account.objects.get(email = user)
+    if user.is_authenticated: #use this currency if loggedin
+        accounts = Account.objects.get(email=user)
         country = accounts.country
         if country == 'Philippines':
-            currency = 'PHP'
+            currency='PHP'
+            symbol = '₱'
+            country_code = 'PH'
         else:
             currency = 'USD'
-    else:
-        currency=''
-        country=''
-    return dict(cart_count=cart_count, country=country, currency=currency)
+            symbol = '$'
+            country_code = 'US'
+    else:  # this will be the currency when loggedout
+        if country == 'Philippines':
+            currency='PHP'
+            symbol = '₱'
+            country_code = 'PH'
+        else:
+            currency = 'USD'
+            symbol = '$'
+            country_code = 'US'
+    return dict(currency=currency, symbol=symbol)

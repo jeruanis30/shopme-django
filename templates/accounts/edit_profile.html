@@ -111,12 +111,20 @@
                       {{form.state}}
                     </div>
                     <div class="col form-group">
-                      <b><label for="">Country</label></b>
-                      {{form.country}}
+                      <b><label for="">Country</label></b><br>
+											<select name="country" id="" class="form-control" required>
+												<option value="{{user_country}}" selected="">{{user_country}}</option>
+												<option value="Philippines">Philippines</option>
+												<option value="US">US</option>
+											</select>
                     </div>
                     <div class="col form-group">
                       <b><label for="">ZIP Code</label></b>
                       {{form.zip}}
+                    </div>
+										<div class="col-sm-1 form-group">
+                      <b><label for="">Currency</label></b><br>
+                      <button type="button" class="btn btn-warning btn-md">{{currency}}</button>
                     </div>
                   </div>
                   <hr>
